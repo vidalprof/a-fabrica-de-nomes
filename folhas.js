@@ -1293,13 +1293,24 @@ var CRUZ = null;
       `_qa/funcoes.py`, o portão "função que não existe" — que eu não rodei. */
 function rolaParaCruz(){
   /* de quem é a vez: a fila da cruzadinha, ou a quadra única do outro teclado */
+  /* ⚠️⚠️ LÊ AS DUAS PELO `window`, e isto NÃO é preciosismo: escrito como
+     `typeof CRUZ !== "undefined" && CRUZ && CRUZ.E`, o `CRUZ` nu depois do `&&`
+     é acusado de `'CRUZ' is not defined` pelo ESLint nos cadernos que não têm
+     cruzadinha (ele não faz análise de fluxo, e o `typeof` só protege a
+     primeira ocorrência). E esse ESLint é o portão 0a2 que roda DENTRO do
+     `entregar.yml`, antes de publicar: com ele vermelho, NADA sobe. Foi assim
+     que quatro publicações minhas falharam seguidas hoje, sem eu entender por
+     quê — e o pré-voo daqui não pega, porque o ESLint não está instalado no
+     container. Como `CRUZ` e `ATIVA` são `var` globais, elas são propriedades
+     de `window`, e ler por ali funciona igual e é declarado. */
   var cs = [], i, andando = 0;
-  if(typeof CRUZ !== "undefined" && CRUZ && CRUZ.E && CRUZ.E.cels){
-    for(i = 0; i < CRUZ.E.cels.length; i++)
-      if(CRUZ.E.cels[i] && CRUZ.E.cels[i].getBoundingClientRect) cs.push(CRUZ.E.cels[i]);
-    andando = CRUZ.val ? CRUZ.val.length : 0;
-  } else if(typeof ATIVA !== "undefined" && ATIVA && ATIVA.q && ATIVA.q.getBoundingClientRect){
-    cs.push(ATIVA.q);
+  var _cruz = window.CRUZ, _ativa = window.ATIVA;
+  if(_cruz && _cruz.E && _cruz.E.cels){
+    for(i = 0; i < _cruz.E.cels.length; i++)
+      if(_cruz.E.cels[i] && _cruz.E.cels[i].getBoundingClientRect) cs.push(_cruz.E.cels[i]);
+    andando = _cruz.val ? _cruz.val.length : 0;
+  } else if(_ativa && _ativa.q && _ativa.q.getBoundingClientRect){
+    cs.push(_ativa.q);
   }
   if(!cs.length) return;
   var tkel = document.getElementById("teclado");
@@ -1592,6 +1603,29 @@ function atualizaNav(){
    ⚠️ E o boletim conta só o que ela TENTOU. Folha que ela não chegou a abrir
       aparece como "ainda não" — jamais como 0 de 6. */
 function fim(){
+  /* ⭐⭐ AVISA O CONTROLE DA SALA QUE ESTA CRIANÇA TERMINOU.
+     Pedido do Marcos (15/set/2026): *"preciso que essas atividades sequências
+     didáticas me avisem quando termino no painel de atividades, aquele que tem
+     o controle da sala, assim como as atividades que fazíamos antes"*.
+
+     ⚠️ E ELAS NÃO AVISAVAM POR CAMINHO NENHUM — conferido no código do
+     laboratório antes de escrever isto. A tela do aluno (`_lab/index.html`)
+     reconhece o fim de DOIS jeitos, e a folha viva escapava dos dois:
+       1. A ESPIADA — ela olha dentro do quadro e procura a MEDALHA do fim pela
+          CLASSE `.medal`. A folha viva chama a dela de `#medalha`, por id, e
+          portanto a espiada nunca a via;
+       2. O AVISO — o motor manda `postMessage({eduverse:"terminou"})` ao chegar
+          no fim. A folha viva não mandava nada, porque nasceu sem essa peça.
+     Agora ela manda o aviso aqui, e a medalha ganhou também a classe `medal`
+     no HTML: dois caminhos, um cobrindo o buraco do outro, que é a razão pela
+     qual o laboratório tem os dois.
+
+     ⚠️ FORA DO LABORATÓRIO NÃO HÁ PAI NENHUM ESCUTANDO e a linha não faz nada —
+     por isso ela é segura em qualquer lugar (em casa, no celular, aberta
+     direto pelo link). O `try` existe para o caso de a janela de cima ser de
+     outro domínio, quando o navegador recusa a leitura de `window.parent`. */
+  try{ if(window.parent && window.parent !== window)
+         window.parent.postMessage({eduverse: "terminou"}, "*"); }catch(e){}
   calar();
   var abertas = 0, naoAbertas = [], pp;
   for(pp = 1; pp <= NOMES.length; pp++){
