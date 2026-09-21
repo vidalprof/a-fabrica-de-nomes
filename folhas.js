@@ -34,8 +34,8 @@ function aoAbrir(d, fn){ if(!d._aoAbrir) d._aoAbrir = []; d._aoAbrir.push(fn); }
    Regra da casa: tudo o que a criança PRECISA LER tem que poder ser OUVIDO.
    O desenho do botão é CSS puro: nada de emoji (vira quadradinho nos PCs da
    escola). */
-function botaoSom(rot, aoTocar){
-  var b = el("button", "som");
+function botaoSom(rot, aoTocar, cls){
+  var b = el("button", cls || "som");
   b.innerHTML = '<i class="cone"></i><i class="onda o1"></i><i class="onda o2"></i>';
   b.setAttribute("aria-label", rot || "Ouvir");
   b.onclick = function(ev){ ev.stopPropagation(); sPasso(); aoTocar(); };
@@ -93,7 +93,7 @@ function f0(d){
   /* CAPA COM IDENTIDADE PRÓPRIA — gerada por _padrao/identidade_capa.py (editar lá).
      Cena: a fábrica de nomes: as placas de nome saindo pela esteira. O título entra letra a letra (desliza), palavra por palavra
      (nowrap, para não quebrar no meio); as figuras são as do próprio caderno. */
-  var c = el("div", "capa"), nome = "A FÁBRICA DE NOMES", k, letras = "", pos = 0;
+  var c = el("div", "capa"), nome = "APRENDENDO OS SUBSTANTIVOS E A FORMAÇÃO DE PALAVRAS", k, letras = "", pos = 0;
   var V = typeof VIMG !== "undefined" ? VIMG : 2;
   nome.split(" ").forEach(function(pal, w){
     var s = "";
@@ -136,7 +136,25 @@ function opcoes(pai, pi, id, lista, certa, cls, falaCerto, falaDica, aoAcertar, 
     b.setAttribute("aria-label", o.aria || o.v);
     b.onclick = function(){ if(b._arrastou){ b._arrastou = false; return; } responde(o, b); };
     if(soltarEm) puxavel(b, soltarEm, function(){ responde(o, b); });
-    box.appendChild(b);
+    /* ⚠️ O ALTO-FALANTE DA RESPOSTA, e ele é DISCRETO e vem ANTES da escolha.
+       Pergunta do Marcos (20/set/2026): *"a atividade tem áudio para ajudar os
+       que não sabem ler? O alto-falante discreto para clicar caso o estudante
+       queira ouvir"*. A resposta era NÃO: a opção tinha `fala`, mas o motor só
+       a tocava DEPOIS do clique — ou seja, a criança tinha de ESCOLHER para
+       ouvir, e aí já tinha respondido. O portão `1o` media a metade errada
+       (cobrava o campo `fala` existir, não a criança poder ouvir antes).
+       ⚠️ Botão IRMÃO, nunca dentro do outro: botão dentro de botão é HTML
+       inválido e o clique vaza para a resposta. O `botaoSom` já faz
+       `stopPropagation`. */
+    if(o.fala){
+      var w = el("div", "opw" + (cls && cls.indexOf("frase") > -1 ? " larga" : ""));
+      w.appendChild(b);
+      w.appendChild(botaoSom("Ouvir esta resposta",
+        (function(f){ return function(){ falar(f); }; })(o.fala), "som somop"));
+      box.appendChild(w);
+    } else {
+      box.appendChild(b);
+    }
   });
   pai.appendChild(box);
 }
@@ -645,7 +663,7 @@ function f12(d, pi){
     var mostra = el("div", "montada"), feito = "";
     mostra.appendChild(nomeSecreto(C.r, id));
     registra(id, pi, C.pedacos.map(function(p){ return chaveQuadro(p) || "hifen"; }).join(" "));
-    var linha = el("div", "ops sils"), passo = 0, bts = [];
+    var linha = el("div", "ops"), passo = 0, bts = [];
     baralha(C.pedacos.map(function(p, j){ return j; })).forEach(function(j){
       var p = C.pedacos[j];
       var b = el("button", "op curta sil", p === "-" ? "–" : p);
@@ -1322,7 +1340,7 @@ function abreCruz(E, pi){
 }
 function fechaCruz(){
   /* ⚠️⚠️ LIÇÃO PAGA — "O ALUNO NÃO CONSEGUIA DIGITAR" (Marcos, 18/set/2026, na
-     folha 8 d'A Fábrica de Nomes). Aqui estava `CRUZ = null; pintaCruz();` — e
+     folha 8 d'Aprendendo os substantivos e a formação de palavras). Aqui estava `CRUZ = null; pintaCruz();` — e
      `pintaCruz` começa lendo `CRUZ.E`. Estourava TypeError toda vez que se
      fechava a caneta. Como a casinha E a grade tinham `onclick`, um toque na
      casinha chamava `abreCruz` duas vezes: a segunda fechava a primeira, o
@@ -1809,7 +1827,7 @@ var OBJETIVOS = [
   {n: "Reconhecer a palavra primitiva e a que nasceu dela", f: [16, 17, 18, 19, 20, 21, 22],
    ok: "acha a palavra-mãe dentro da palavra comprida e junta a família",
    nao: "ainda não enxerga a palavra menor escondida dentro da maior"},
-  {n: "Nomear com uma palavra só um grupo inteiro", f: [23],
+  {n: "Nomear com uma palavra só um grupo inteiro (coletivo — fora do currículo, declarado)", f: [23],
    ok: "usa uma palavra no singular para nomear muitos da mesma espécie",
    nao: "ainda não liga o grupo à palavra que o nomeia"},
   {n: "Achar e classificar os substantivos dentro de um texto lido", f: [24, 25],
